@@ -1,5 +1,7 @@
 package controller;
 
+import rasterize.LineRasterizer;
+import rasterize.LineRasterizerGraphics;
 import view.Panel;
 
 import java.awt.event.KeyAdapter;
@@ -12,6 +14,10 @@ public class Controller2D {
     // snake
     private int snakeX;
     private int snakeY;
+    private int x, y;
+
+    //Rasterizers
+    private LineRasterizer lineRasterizer;
 
     public Controller2D(Panel panel) {
         this.panel = panel;
@@ -20,10 +26,29 @@ public class Controller2D {
         snakeY = panel.getHeight() / 2;
         panel.getRaster().setRGB(snakeX, snakeY, 0xffff00);
 
+        lineRasterizer = new LineRasterizerGraphics(panel.getRaster());
+
         initListeners();
     }
 
     private void initListeners() {
+
+        panel.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                int startX = panel.getWidth()/2;
+                int startY = panel.getHeight()/2;
+                int endX = e.getX();
+                int endY = e.getY();
+
+                panel.getRaster().clear();
+
+                lineRasterizer.rasterize(startX, startY, endX, endY);
+                panel.repaint();
+
+            }
+        });
+
         panel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
