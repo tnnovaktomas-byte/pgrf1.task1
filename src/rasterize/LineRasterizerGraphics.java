@@ -4,9 +4,9 @@ import raster.Raster;
 import raster.RasterBufferedImage;
 
 import java.awt.*;
-//testovací třída
 
-public class LineRasterizerGraphics extends LineRasterizer{
+public class LineRasterizerGraphics extends LineRasterizer {
+
     public LineRasterizerGraphics(Raster raster) {
         super(raster);
     }

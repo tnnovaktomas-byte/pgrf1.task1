@@ -7,12 +7,13 @@ public class RasterBufferedImage implements Raster {
 
     private final BufferedImage image;
 
-    public RasterBufferedImage(int width; int height) {
+    public RasterBufferedImage(int width, int height) {
         image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
     }
 
     @Override
     public void setPixel(int x, int y, int color) {
+        // TODO: ošetřit vykreslení mimo obrazovku
         image.setRGB(x, y, color);
     }
 
@@ -36,7 +37,7 @@ public class RasterBufferedImage implements Raster {
                 0,
                 0,
                 image.getWidth(),
-                image.getHeight(),
+                image.getHeight()
         );
     }
 }
