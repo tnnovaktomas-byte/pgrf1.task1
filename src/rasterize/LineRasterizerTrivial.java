@@ -17,7 +17,7 @@ public class LineRasterizerTrivial extends LineRasterizer{
     @Override
     public void rasterize(int x1, int y1, int x2, int y2) {
 
-        // Ošetření svislé úsečky (dx == 0)
+        // Svislé úsečky
         if (x1 == x2) {
             int startY = Math.min(y1, y2);
             int endY = Math.max(y1, y2);
@@ -31,7 +31,7 @@ public class LineRasterizerTrivial extends LineRasterizer{
         double k = (double) (y2 - y1) / (x2 - x1);
         double q = y1 - k * x1;
 
-        // 2. a 3. Rozlišení řídicí osy podle velikosti směrnice
+
         if (Math.abs(k) <= 1) {
             // Řídicí osa je X
             if (x1 > x2) {
