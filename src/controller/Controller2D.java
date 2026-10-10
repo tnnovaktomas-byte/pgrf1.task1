@@ -20,13 +20,15 @@ public class Controller2D {
     // Rasterizers
     private LineRasterizer lineRasterizer;
     private PolygonRasterizer polygonRasterizer;
-    private Polygon polygon;
+
+    private final Polygon polygon;
+    private Point2D lineStart, lineEnd;
 
     public Controller2D(Panel panel) {
         this.panel = panel;
 
         lineRasterizer = new LineRasterizerGraphics(panel.getRaster());
-//        lineRasterizer = new LineRasterizerTrivial(panel.getRaster());
+        //lineRasterizer = new LineRasterizerTrivial(panel.getRaster());
         polygonRasterizer = new PolygonRasterizer(lineRasterizer);
 
         polygon = new Polygon();
@@ -35,26 +37,21 @@ public class Controller2D {
     }
 
     private void initListeners() {
-        panel.addMouseMotionListener(new MouseAdapter() {
+        panel.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseDragged(MouseEvent e) {
-                if (e.getButton() == MouseEvent.BUTTON1) {
+            public void mousePressed(MouseEvent e) {
+                if(e.getButton() == MouseEvent.BUTTON1) {
                     int startX = panel.getWidth() / 2;
                     int startY = panel.getHeight() / 2;
                     int endX = e.getX();
                     int endY = e.getY();
+                    lineStart = new Point2D(startX, startY);
+                    lineEnd = new Point2D(endX, endY);
 
-                    panel.getRaster().clear();
-                    lineRasterizer.rasterize(startX, startY, endX, endY);
-                    panel.repaint();
+                    drawScene();
                 }
-            }
-        });
 
-        panel.addMouseMotionListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                if (e.getButton() == MouseEvent.BUTTON3) {
+                if(e.getButton() == MouseEvent.BUTTON3) {
                     Point2D point = new Point2D(e.getX(), e.getY());
                     polygon.addPoint(point);
 
@@ -63,9 +60,11 @@ public class Controller2D {
             }
         });
     }
+
     private void drawScene() {
         panel.getRaster().clear();
 
+        lineRasterizer.rasterize(lineStart.getX(), lineStart.getY(), lineEnd.getX(), lineEnd.getY());
         polygonRasterizer.rasterize(polygon);
 
         panel.repaint();

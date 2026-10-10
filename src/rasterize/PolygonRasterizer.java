@@ -6,6 +6,7 @@ import model.Polygon;
 public class PolygonRasterizer {
     private LineRasterizer lineRasterizer;
 
+
     public PolygonRasterizer(LineRasterizer lineRasterizer) {
         this.lineRasterizer = lineRasterizer;
     }
@@ -15,11 +16,12 @@ public class PolygonRasterizer {
     }
 
     public void rasterize(Polygon polygon) {
+        if(polygon.getSize() < 3) return;
+
         for (int i = 0; i < polygon.getSize(); i++) {
-            //TODO: když nemá aspoň 3 vrcholy tak "returrn"/ zavolá se linerasterizer
-            //TODO: podmínka, aby se našlaa velikost listu a nešlo se víc (nebo modulem %)
             Point2D pointA = polygon.getPoint(i);
-            Point2D pointB = polygon.getPoint(i+1);
+            Point2D pointB = polygon.getPoint((i + 1) % polygon.getSize());
+            lineRasterizer.rasterize(pointA.getX(),  pointA.getY(), pointB.getX(), pointB.getY());
         }
     }
 }
