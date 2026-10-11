@@ -34,7 +34,7 @@ public class Controller2D {
 
     public Controller2D(Panel panel) {
         this.panel = panel;
-
+        //Triviální
         this.lineRasterizer = new LineRasterizerTrivial(panel.getRaster());
         this.polygonRasterizer = new PolygonRasterizer(lineRasterizer);
 
