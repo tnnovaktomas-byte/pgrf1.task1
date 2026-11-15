@@ -7,7 +7,6 @@ import raster.Raster;
 import rasterize.PolygonRasterizer;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class ScanLineFill implements Filler {
@@ -63,7 +62,7 @@ public class ScanLineFill implements Filler {
                 intersections.add(edge.getIntersection(y));
             }
 
-            Collections.sort(intersections);
+            sortIntersections(intersections);
 
             // Spojení Lichý a sudý
             for (int i = 0; i + 1 < intersections.size(); i += 2) {
@@ -77,6 +76,21 @@ public class ScanLineFill implements Filler {
 
 
         polygonRasterizer.rasterize(polygon);
+    }
+
+    // insertion sort
+    private void sortIntersections(List<Integer> list) {
+        for (int i = 1; i < list.size(); i++) {
+            int current = list.get(i);
+            int j = i - 1;
+
+            // větší posunout doprava
+            while (j >= 0 && list.get(j) > current) {
+                list.set(j + 1, list.get(j));
+                j--;
+            }
+            list.set(j + 1, current);
+        }
     }
 
     @Override

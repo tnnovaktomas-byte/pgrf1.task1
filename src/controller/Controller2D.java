@@ -43,7 +43,9 @@ public class Controller2D {
 
     // režim ořezu
     private enum ClipMode {
-        NONE, POLYGON, LINE
+        NONE,
+        POLYGON,
+        LINE
     }
 
     private final Panel panel;
@@ -52,6 +54,8 @@ public class Controller2D {
     private boolean editingClipPolygon = false; // Ctrl + pravé tlačítko
     private boolean clipDrawingStarted = false; // během jednoho podržení Ctrl
     private boolean customClipPolygon = false;  // vlastní místo šestiúhelníku
+    private boolean customClipWindow = false;   // vlastní ořezávací okno
+    private Point2D windowStart;                // Ctrl + levé tažení
 
     //Rasterizace
     private final LineRasterizer lineRasterizer;
@@ -169,10 +173,17 @@ public class Controller2D {
         }
 
         // ořezávací okno
-        int xMin = width / 8;
-        int yMin = height / 8;
-        int xMax = width - width / 8;
-        int yMax = height - height / 8;
+        if (!customClipWindow) {
+            setClipWindow(width / 8, height / 8, width - width / 8, height - height / 8);
+        }
+    }
+
+    // okno ze dvou rohů
+    private void setClipWindow(int x1, int y1, int x2, int y2) {
+        int xMin = Math.min(x1, x2);
+        int yMin = Math.min(y1, y2);
+        int xMax = Math.max(x1, x2);
+        int yMax = Math.max(y1, y2);
         csClipper = new CSClipper(xMin, yMin, xMax, yMax);
 
         clipWindow = new Polygon();
@@ -180,6 +191,15 @@ public class Controller2D {
         clipWindow.addPoint(new Point2D(xMax, yMin));
         clipWindow.addPoint(new Point2D(xMax, yMax));
         clipWindow.addPoint(new Point2D(xMin, yMax));
+    }
+
+    // tažení nového okna
+    private void updateClipWindow(int x, int y) {
+        // nulová šířka/výška se ignoruje
+        if (x != windowStart.getX() && y != windowStart.getY()) {
+            customClipWindow = true;
+            setClipWindow(windowStart.getX(), windowStart.getY(), x, y);
+        }
     }
 
     private void initToolbar() {
@@ -232,8 +252,15 @@ public class Controller2D {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (SwingUtilities.isLeftMouseButton(e)) {
-                    tempLineStart = new Point2D(e.getX(), e.getY());
-                    tempLineEnd = tempLineStart;
+                    if (e.isControlDown()) {
+                        // nové ořezávací okno
+                        windowStart = new Point2D(e.getX(), e.getY());
+                        clipMode = ClipMode.LINE;
+                        clipToolbar.getLineClipButton().setSelected(true);
+                    } else {
+                        tempLineStart = new Point2D(e.getX(), e.getY());
+                        tempLineEnd = tempLineStart;
+                    }
                     drawScene();
                 } else if (SwingUtilities.isRightMouseButton(e)) {
                     editingClipPolygon = e.isControlDown();
@@ -244,16 +271,18 @@ public class Controller2D {
                     drawScene();
                 }
 
-                if (e.getButton() == MouseEvent.BUTTON2) {
+                if(e.getButton() == MouseEvent.BUTTON2) {
                     seedFiller.setSeed(new Point2D(e.getX(), e.getY()));
                     drawScene();
                 }
             }
-
             //Aktualizace souřadnic
             @Override
             public void mouseDragged(MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e) && tempLineStart != null) {
+                if (SwingUtilities.isLeftMouseButton(e) && windowStart != null) {
+                    updateClipWindow(e.getX(), e.getY());
+                    drawScene();
+                } else if (SwingUtilities.isLeftMouseButton(e) && tempLineStart != null) {
                     mousePosition = new Point2D(e.getX(), e.getY());
                     tempLineEnd = lineEnd(mousePosition, e.isShiftDown());
                     drawScene();
@@ -265,7 +294,11 @@ public class Controller2D {
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e) && tempLineStart != null) {
+                if (SwingUtilities.isLeftMouseButton(e) && windowStart != null) {
+                    updateClipWindow(e.getX(), e.getY());
+                    windowStart = null;
+                    drawScene();
+                } else if (SwingUtilities.isLeftMouseButton(e) && tempLineStart != null) {
                     tempLineEnd = lineEnd(new Point2D(e.getX(), e.getY()), e.isShiftDown());
                     lines.add(new Line(tempLineStart, tempLineEnd));
                     tempLineStart = null;
@@ -363,7 +396,9 @@ public class Controller2D {
         editingClipPolygon = false;
         clipDrawingStarted = false;
         customClipPolygon = false;
-        createClipShapes(); // zpět šestiúhelník
+        customClipWindow = false;
+        windowStart = null;
+        createClipShapes(); // zpět šestiúhelník a okno
         resetColors();
         drawScene();
     }
