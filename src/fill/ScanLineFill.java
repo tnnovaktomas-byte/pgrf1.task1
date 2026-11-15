@@ -49,8 +49,12 @@ public class ScanLineFill implements Filler {
             if (y > yMax) yMax = y;
         }
 
+        // jen viditelné řádky
+        int yStart = Math.max(yMin, 0);
+        int yEnd = Math.min(yMax, raster.getHeight() - 1);
+
         // Hledání Průsečíků
-        for (int y = yMin; y <= yMax; y++) {
+        for (int y = yStart; y <= yEnd; y++) {
             List<Integer> intersections = new ArrayList<>();
 
             for (Edge edge : edges) {
@@ -63,8 +67,8 @@ public class ScanLineFill implements Filler {
 
             // Spojení Lichý a sudý
             for (int i = 0; i + 1 < intersections.size(); i += 2) {
-                int xStart = intersections.get(i);
-                int xEnd = intersections.get(i + 1);
+                int xStart = Math.max(intersections.get(i), 0); // jen viditelné
+                int xEnd = Math.min(intersections.get(i + 1), raster.getWidth() - 1);
                 for (int x = xStart; x <= xEnd; x++) {
                     raster.setPixel(x, y, fillColor);
                 }

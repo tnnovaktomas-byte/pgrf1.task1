@@ -322,7 +322,11 @@ public class Controller2D {
             scanLineFill.setPolygon(toFill);
             scanLineFill.fill();
         }
-        polygonRasterizer.rasterize(polygon);
+
+        // obrys (jinak ho kreslí scan-line)
+        if (polygon.getSize() < 3 || clipMode == ClipMode.POLYGON) {
+            polygonRasterizer.rasterize(polygon);
+        }
 
         // ořezávací tvary
         if (clipMode == ClipMode.POLYGON) {
