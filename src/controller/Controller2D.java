@@ -1,6 +1,7 @@
 package controller;
 
 import fill.Filler;
+import fill.ScanLineFill;
 import fill.SeedFill;
 import model.Line;
 import model.Point2D;
@@ -23,6 +24,7 @@ public class Controller2D {
     // Barvy
     private static final int BOUNDARY_COLOR = 0xFFFFFF;
     private static final int FILL_COLOR = 0x00FF00;
+    private static final int SCANLINE_COLOR = 0x3366FF; // modrá
 
     private final Panel panel;
 
@@ -32,6 +34,7 @@ public class Controller2D {
 
     //Fillers
     private SeedFill seedFiller;
+    private final ScanLineFill scanLineFill;
 
     // Uložené objekty
     private final List<Line> lines = new ArrayList<>();
@@ -55,6 +58,10 @@ public class Controller2D {
         seedFiller = new SeedFill(panel.getRaster());
         seedFiller.setFillColor(FILL_COLOR);
         seedFiller.setBoundaryColor(BOUNDARY_COLOR);
+
+        scanLineFill = new ScanLineFill(panel.getRaster(), polygonRasterizer);
+        scanLineFill.setFillColor(SCANLINE_COLOR);
+        scanLineFill.setPolygon(polygon);
 
         initListeners();
         updateTitle();
@@ -196,7 +203,11 @@ public class Controller2D {
             lineRasterizer.rasterize(tempLineStart, tempLineEnd);
         }
 
-        polygonRasterizer.rasterize(polygon);
+        if (polygon.getSize() >= 3) {
+            scanLineFill.fill();
+        } else {
+            polygonRasterizer.rasterize(polygon);
+        }
 
         // Pružná úsečka por polygon
         if (tempPolygonPoint != null) {
