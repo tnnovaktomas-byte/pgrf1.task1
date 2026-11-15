@@ -11,10 +11,13 @@ import model.Polygon;
 import rasterize.LineRasterizer;
 import rasterize.LineRasterizerTrivial;
 import rasterize.PolygonRasterizer;
+import view.ClipToolbar;
 import view.Panel;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -31,7 +34,16 @@ public class Controller2D {
     private static final int WINDOW_COLOR = 0xFF8800;   // oranžová
     private static final int CLIPPED_LINE_COLOR = 0xFF0000; // červená
 
+    // režim ořezu
+    private enum ClipMode {
+        NONE,
+        POLYGON,
+        LINE
+    }
+
     private final Panel panel;
+    private final ClipToolbar clipToolbar;
+    private ClipMode clipMode = ClipMode.NONE;
 
     //Rasterizace
     private final LineRasterizer lineRasterizer;
@@ -60,8 +72,9 @@ public class Controller2D {
 
     private Point2D tempPolygonPoint;
 
-    public Controller2D(Panel panel) {
+    public Controller2D(Panel panel, ClipToolbar clipToolbar) {
         this.panel = panel;
+        this.clipToolbar = clipToolbar;
         //Triviální Rasterizers
         LineRasterizerTrivial trivialRasterizer = new LineRasterizerTrivial(panel.getRaster());
         trivialRasterizer.setColor(BOUNDARY_COLOR); // hranice (úsečky i polygon)
@@ -107,8 +120,29 @@ public class Controller2D {
         scanLineFill.setFillColor(SCANLINE_COLOR);
 
         initListeners();
+        initToolbar();
         updateTitle();
         drawScene();
+    }
+
+    private void initToolbar() {
+        ActionListener clipListener = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (e.getSource() == clipToolbar.getPolygonClipButton()) {
+                    clipMode = ClipMode.POLYGON;
+                } else if (e.getSource() == clipToolbar.getLineClipButton()) {
+                    clipMode = ClipMode.LINE;
+                } else {
+                    clipMode = ClipMode.NONE;
+                }
+                drawScene();
+            }
+        };
+
+        clipToolbar.getNoClipButton().addActionListener(clipListener);
+        clipToolbar.getPolygonClipButton().addActionListener(clipListener);
+        clipToolbar.getLineClipButton().addActionListener(clipListener);
     }
 
     private void initListeners() {
@@ -219,6 +253,8 @@ public class Controller2D {
         tempPolygonPoint = null;
         seedFiller.setSeed(null); // bez semínka se nic nevyplňuje
         seedFiller.setUseBoundaryColor(false);
+        clipMode = ClipMode.NONE;
+        clipToolbar.getNoClipButton().setSelected(true);
         updateTitle();
         drawScene();
     }
@@ -236,12 +272,14 @@ public class Controller2D {
     }
 
     // celá bíle, ořez červeně
-    private void drawClippedLine(Line line) {
+    private void drawLine(Line line) {
         lineRasterizer.rasterize(line);
 
-        Line clipped = csClipper.clip(line);
-        if (clipped != null) {
-            clippedLineRasterizer.rasterize(clipped);
+        if (clipMode == ClipMode.LINE) {
+            Line clipped = csClipper.clip(line);
+            if (clipped != null) {
+                clippedLineRasterizer.rasterize(clipped);
+            }
         }
     }
 
@@ -249,23 +287,32 @@ public class Controller2D {
         panel.getRaster().clear();
 
         for (Line line : lines) {
-            drawClippedLine(line);
+            drawLine(line);
         }
 
         // Pružná Úsečka
         if (tempLineStart != null && tempLineEnd != null) {
-            drawClippedLine(new Line(tempLineStart, tempLineEnd));
+            drawLine(new Line(tempLineStart, tempLineEnd));
         }
 
-        // ořezání + výplň
+        // výplň (případně ořezaná)
         if (polygon.getSize() >= 3) {
-            Polygon clipped = shClipper.clip(polygon, clipPolygon);
-            scanLineFill.setPolygon(clipped);
+            Polygon toFill = polygon;
+            if (clipMode == ClipMode.POLYGON) {
+                toFill = shClipper.clip(polygon, clipPolygon);
+            }
+            scanLineFill.setPolygon(toFill);
             scanLineFill.fill();
         }
         polygonRasterizer.rasterize(polygon);
-        clipRasterizer.rasterize(clipPolygon);
-        windowRasterizer.rasterize(clipWindow);
+
+        // ořezávací tvary
+        if (clipMode == ClipMode.POLYGON) {
+            clipRasterizer.rasterize(clipPolygon);
+        }
+        if (clipMode == ClipMode.LINE) {
+            windowRasterizer.rasterize(clipWindow);
+        }
 
         // Pružná úsečka por polygon
         if (tempPolygonPoint != null) {
