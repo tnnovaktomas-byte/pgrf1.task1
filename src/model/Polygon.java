@@ -26,6 +26,25 @@ public class Polygon {
         points.clear();
     }
 
+    // orientace (shoelace)
+    public boolean isClockwise() {
+        long sum = 0;
+        for (int i = 0; i < points.size(); i++) {
+            Point2D a = points.get(i);
+            Point2D b = points.get((i + 1) % points.size());
+            sum += (long) a.getX() * b.getY() - (long) b.getX() * a.getY();
+        }
+        return sum > 0; // osa y dolů
+    }
+
+    // obrácené pořadí
+    public Polygon reversed() {
+        Polygon result = new Polygon();
+        for (int i = points.size() - 1; i >= 0; i--) {
+            result.addPoint(points.get(i));
+        }
+        return result;
+    }
 
     public boolean isInside(Point2D p) {
         if (points.size() < 3) return false;
@@ -37,6 +56,7 @@ public class Polygon {
             if (side > 0) hasRight = true;
             if (side < 0) hasLeft = true;
 
+            // bod je vlevo od jedné hrany a vpravo od jiné → je venku
             if (hasLeft && hasRight) return false;
         }
         return true;
