@@ -1,5 +1,7 @@
 package controller;
 
+import fill.Filler;
+import fill.SeedFill;
 import model.Line;
 import model.Point2D;
 import model.Polygon;
@@ -23,6 +25,9 @@ public class Controller2D {
     private final LineRasterizer lineRasterizer;
     private final PolygonRasterizer polygonRasterizer;
 
+    //Fillers
+    private SeedFill seedFiller;
+
     // Uložené objekty
     private final List<Line> lines = new ArrayList<>();
     private final Polygon polygon = new Polygon();
@@ -34,9 +39,12 @@ public class Controller2D {
 
     public Controller2D(Panel panel) {
         this.panel = panel;
-        //Triviální
+        //Triviální Rasterizers
         this.lineRasterizer = new LineRasterizerTrivial(panel.getRaster());
         this.polygonRasterizer = new PolygonRasterizer(lineRasterizer);
+
+        // Fillers
+        seedFiller = new SeedFill(panel.getRaster());
 
         initListeners();
     }
@@ -52,6 +60,11 @@ public class Controller2D {
                     drawScene();
                 } else if (SwingUtilities.isRightMouseButton(e)) {
                     tempPolygonPoint = new Point2D(e.getX(), e.getY());
+                    drawScene();
+                }
+
+                if(e.getButton() == MouseEvent.BUTTON2) {
+                    seedFiller.setSeed(new Point2D(e.getX(), e.getY()));
                     drawScene();
                 }
             }
@@ -134,6 +147,8 @@ public class Controller2D {
                 lineRasterizer.rasterize(tempPolygonPoint, firstPoint);
             }
         }
+
+        seedFiller.fill();
 
         panel.repaint();
     }
