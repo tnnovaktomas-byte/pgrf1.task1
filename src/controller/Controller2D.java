@@ -2,7 +2,6 @@ package controller;
 
 import fill.Filler;
 import fill.SeedFill;
-import model.Edge;
 import model.Line;
 import model.Point2D;
 import model.Polygon;
@@ -35,6 +34,7 @@ public class Controller2D {
 
     private Point2D tempLineStart;
     private Point2D tempLineEnd;
+    private Point2D mousePosition; // skutečná poloha myši při tažení úsečky
 
     private Point2D tempPolygonPoint;
 
@@ -61,7 +61,6 @@ public class Controller2D {
                     drawScene();
                 } else if (SwingUtilities.isRightMouseButton(e)) {
                     tempPolygonPoint = new Point2D(e.getX(), e.getY());
-                    printPointPosition(tempPolygonPoint);
                     drawScene();
                 }
 
@@ -74,7 +73,8 @@ public class Controller2D {
             @Override
             public void mouseDragged(MouseEvent e) {
                 if (SwingUtilities.isLeftMouseButton(e) && tempLineStart != null) {
-                    tempLineEnd = new Point2D(e.getX(), e.getY());
+                    mousePosition = new Point2D(e.getX(), e.getY());
+                    tempLineEnd = lineEnd(mousePosition, e.isShiftDown());
                     drawScene();
                 } else if (SwingUtilities.isRightMouseButton(e) && tempPolygonPoint != null) {
                     tempPolygonPoint = new Point2D(e.getX(), e.getY());
@@ -85,10 +85,11 @@ public class Controller2D {
             @Override
             public void mouseReleased(MouseEvent e) {
                 if (SwingUtilities.isLeftMouseButton(e) && tempLineStart != null) {
-                    tempLineEnd = new Point2D(e.getX(), e.getY());
+                    tempLineEnd = lineEnd(new Point2D(e.getX(), e.getY()), e.isShiftDown());
                     lines.add(new Line(tempLineStart, tempLineEnd));
                     tempLineStart = null;
                     tempLineEnd = null;
+                    mousePosition = null;
                     drawScene();
                 } else if (SwingUtilities.isRightMouseButton(e) && tempPolygonPoint != null) {
                     polygon.addPoint(new Point2D(e.getX(), e.getY()));
@@ -110,25 +111,35 @@ public class Controller2D {
                 if (e.getKeyCode() == KeyEvent.VK_C) {
                     clearAll();
                 }
+
+                if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+                    updateLineEnd(true);
+                }
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                // puštění Shiftu během tažení – konec se vrátí pod kurzor
+                if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+                    updateLineEnd(false);
+                }
             }
         });
     }
 
-    // Test bodu v polorovině – výpis do konzole
-    private void printPointPosition(Point2D p) {
-        int size = polygon.getSize();
-        if (size < 2) return;
 
-        // poloha vůči poslední hraně (předposlední -> poslední vrchol)
-        Edge lastEdge = new Edge(polygon.getPoint(size - 2), polygon.getPoint(size - 1));
-        int side = lastEdge.side(p);
-        if (side > 0) System.out.println("Bod je vpravo od poslední hrany");
-        else if (side < 0) System.out.println("Bod je vlevo od poslední hrany");
-        else System.out.println("Bod leží na přímce poslední hrany");
+    private void updateLineEnd(boolean shift) {
+        if (tempLineStart == null || mousePosition == null) return;
+        tempLineEnd = lineEnd(mousePosition, shift);
+        drawScene();
+    }
 
-        // poloha vůči celému polygonu (platí pro konvexní polygon)
-        if (size >= 3) {
-            System.out.println(polygon.isInside(p) ? "Bod je uvnitř polygonu" : "Bod je vně polygonu");
+    // Konec úsečky
+    private Point2D lineEnd(Point2D mouse, boolean shift) {
+        if (shift) {
+            return tempLineStart.snapEnd(mouse);
+        } else {
+            return mouse;
         }
     }
 
@@ -137,6 +148,7 @@ public class Controller2D {
         polygon.clear();
         tempLineStart = null;
         tempLineEnd = null;
+        mousePosition = null;
         tempPolygonPoint = null;
         drawScene();
     }
