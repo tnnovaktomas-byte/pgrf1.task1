@@ -1,6 +1,7 @@
 package controller;
 
 import fill.Filler;
+import clip.CSClipper;
 import clip.SHClipper;
 import fill.ScanLineFill;
 import fill.SeedFill;
@@ -27,6 +28,8 @@ public class Controller2D {
     private static final int FILL_COLOR = 0x00FF00;
     private static final int SCANLINE_COLOR = 0x3366FF; // modrá
     private static final int CLIP_COLOR = 0xFFFF00;     // žlutá
+    private static final int WINDOW_COLOR = 0xFF8800;   // oranžová
+    private static final int CLIPPED_LINE_COLOR = 0xFF0000; // červená
 
     private final Panel panel;
 
@@ -34,10 +37,14 @@ public class Controller2D {
     private final LineRasterizer lineRasterizer;
     private final PolygonRasterizer polygonRasterizer;
     private final PolygonRasterizer clipRasterizer;
+    private final PolygonRasterizer windowRasterizer;
+    private final LineRasterizer clippedLineRasterizer;
 
     // Ořezávání
     private final SHClipper shClipper = new SHClipper();
     private final Polygon clipPolygon;
+    private final CSClipper csClipper;
+    private final Polygon clipWindow;
 
     //Fillers
     private SeedFill seedFiller;
@@ -69,6 +76,27 @@ public class Controller2D {
         int width = panel.getRaster().getWidth();
         int height = panel.getRaster().getHeight();
         clipPolygon = Polygon.createRegular(width / 2, height / 2, Math.min(width, height) / 3, 6);
+
+        // ořezávací okno
+        int xMin = width / 8;
+        int yMin = height / 8;
+        int xMax = width - width / 8;
+        int yMax = height - height / 8;
+        csClipper = new CSClipper(xMin, yMin, xMax, yMax);
+
+        clipWindow = new Polygon();
+        clipWindow.addPoint(new Point2D(xMin, yMin));
+        clipWindow.addPoint(new Point2D(xMax, yMin));
+        clipWindow.addPoint(new Point2D(xMax, yMax));
+        clipWindow.addPoint(new Point2D(xMin, yMax));
+
+        LineRasterizerTrivial windowLineRasterizer = new LineRasterizerTrivial(panel.getRaster());
+        windowLineRasterizer.setColor(WINDOW_COLOR);
+        this.windowRasterizer = new PolygonRasterizer(windowLineRasterizer);
+
+        LineRasterizerTrivial redRasterizer = new LineRasterizerTrivial(panel.getRaster());
+        redRasterizer.setColor(CLIPPED_LINE_COLOR);
+        this.clippedLineRasterizer = redRasterizer;
 
         // Fillers
         seedFiller = new SeedFill(panel.getRaster());
@@ -207,16 +235,26 @@ public class Controller2D {
         }
     }
 
+    // celá bíle, ořez červeně
+    private void drawClippedLine(Line line) {
+        lineRasterizer.rasterize(line);
+
+        Line clipped = csClipper.clip(line);
+        if (clipped != null) {
+            clippedLineRasterizer.rasterize(clipped);
+        }
+    }
+
     private void drawScene() {
         panel.getRaster().clear();
 
         for (Line line : lines) {
-            lineRasterizer.rasterize(line);
+            drawClippedLine(line);
         }
 
         // Pružná Úsečka
         if (tempLineStart != null && tempLineEnd != null) {
-            lineRasterizer.rasterize(tempLineStart, tempLineEnd);
+            drawClippedLine(new Line(tempLineStart, tempLineEnd));
         }
 
         // ořezání + výplň
@@ -227,6 +265,7 @@ public class Controller2D {
         }
         polygonRasterizer.rasterize(polygon);
         clipRasterizer.rasterize(clipPolygon);
+        windowRasterizer.rasterize(clipWindow);
 
         // Pružná úsečka por polygon
         if (tempPolygonPoint != null) {
