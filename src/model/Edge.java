@@ -32,21 +32,10 @@ public class Edge {
         }
     }
 
-    /**
-     * Existuje průsečík se scan-line y?
-     * Interval je zprava otevřený (y < y2) = zkrácení hrany o 1 pixel na konci.
-     * Díky tomu se společný vrchol dvou navazujících hran nezapočítá dvakrát.
-     * Předpokládá zorientovanou hranu (y1 < y2).
-     */
     public boolean isIntersection(int y) {
         return y >= y1 && y < y2;
     }
 
-    /**
-     * x-ová souřadnice průsečíku hrany se scan-line y.
-     * Používáme převrácenou směrnici 1/k = dx/dy, protože hrana není vodorovná
-     * (dy != 0), kdežto svislá hrana (dx = 0) by s k = dy/dx dělila nulou.
-     */
     public int getIntersection(int y) {
         double invK = (double) (x2 - x1) / (y2 - y1);
         return (int) Math.round(x1 + (y - y1) * invK);
@@ -58,9 +47,10 @@ public class Edge {
      * 2. normála n = (-t.y, t.x)
      * 3. vektor k bodu v = P - P1
      * 4. skalární součin n · v
+     * Normalizace není potřeba – o straně rozhoduje jen znaménko.
      *
      * Na obrazovce roste osa y dolů, proto normála (-t.y, t.x) míří
-     * vpravo od směru hrany
+     * vpravo od směru hrany (P1 -> P2):
      *   > 0  bod leží vpravo
      *   < 0  bod leží vlevo
      *   = 0  bod leží na přímce
@@ -76,6 +66,21 @@ public class Edge {
 
     public int side(Point2D p) {
         return side(p.getX(), p.getY());
+    }
+
+    // průsečík přímek
+    public Point2D intersection(Point2D a, Point2D b) {
+        double x3 = a.getX(), y3 = a.getY();
+        double x4 = b.getX(), y4 = b.getY();
+
+        double directionCross = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        double edgeCross = x1 * y2 - y1 * x2;
+        double lineCross = x3 * y4 - y3 * x4;
+
+        double x0 = (edgeCross * (x3 - x4) - (x1 - x2) * lineCross) / directionCross;
+        double y0 = (edgeCross * (y3 - y4) - (y1 - y2) * lineCross) / directionCross;
+
+        return new Point2D((int) Math.round(x0), (int) Math.round(y0));
     }
 
     public int getX1() {
