@@ -53,6 +53,7 @@ public class Controller2D {
         // Fillers
         seedFiller = new SeedFill(panel.getRaster());
         seedFiller.setFillColor(FILL_COLOR);
+        seedFiller.setBoundaryColor(BOUNDARY_COLOR);
 
         initListeners();
     }
@@ -156,6 +157,7 @@ public class Controller2D {
         tempLineEnd = null;
         mousePosition = null;
         tempPolygonPoint = null;
+        seedFiller.setSeed(null); // bez semínka se nic nevyplňuje
         drawScene();
     }
 
