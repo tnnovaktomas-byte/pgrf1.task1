@@ -26,15 +26,20 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class Controller2D {
-    // Barvy
+    // Výchozí barvy
     private static final int BOUNDARY_COLOR = 0xFFFFFF;
     private static final int FILL_COLOR = 0x00FF00;
     private static final int SCANLINE_COLOR = 0x3366FF; // modrá
     private static final int CLIP_COLOR = 0xFFFF00;     // žlutá
     private static final int WINDOW_COLOR = 0xFF8800;   // oranžová
     private static final int CLIPPED_LINE_COLOR = 0xFF0000; // červená
+
+    // Aktuální barvy (R)
+    private int boundaryColor, fillColor, scanLineColor, clipColor, windowColor, clippedLineColor;
+    private final Random random = new Random();
 
     // režim ořezu
     private enum ClipMode {
@@ -55,6 +60,7 @@ public class Controller2D {
     private final PolygonRasterizer polygonRasterizer;
     private final LineRasterizer clipLineRasterizer;
     private final PolygonRasterizer clipRasterizer;
+    private final LineRasterizer windowLineRasterizer;
     private final PolygonRasterizer windowRasterizer;
     private final LineRasterizer clippedLineRasterizer;
 
@@ -82,37 +88,76 @@ public class Controller2D {
         this.panel = panel;
         this.clipToolbar = clipToolbar;
         //Triviální Rasterizers
-        LineRasterizerTrivial trivialRasterizer = new LineRasterizerTrivial(panel.getRaster());
-        trivialRasterizer.setColor(BOUNDARY_COLOR); // hranice (úsečky i polygon)
-        this.lineRasterizer = trivialRasterizer;
+        this.lineRasterizer = new LineRasterizerTrivial(panel.getRaster()); // hranice
         this.polygonRasterizer = new PolygonRasterizer(lineRasterizer);
 
-        LineRasterizerTrivial yellowRasterizer = new LineRasterizerTrivial(panel.getRaster());
-        yellowRasterizer.setColor(CLIP_COLOR);
-        this.clipLineRasterizer = yellowRasterizer;
+        this.clipLineRasterizer = new LineRasterizerTrivial(panel.getRaster());
         this.clipRasterizer = new PolygonRasterizer(clipLineRasterizer);
+
+        this.windowLineRasterizer = new LineRasterizerTrivial(panel.getRaster());
+        this.windowRasterizer = new PolygonRasterizer(windowLineRasterizer);
+
+        this.clippedLineRasterizer = new LineRasterizerTrivial(panel.getRaster());
 
         createClipShapes();
 
-        LineRasterizerTrivial windowLineRasterizer = new LineRasterizerTrivial(panel.getRaster());
-        windowLineRasterizer.setColor(WINDOW_COLOR);
-        this.windowRasterizer = new PolygonRasterizer(windowLineRasterizer);
-
-        LineRasterizerTrivial redRasterizer = new LineRasterizerTrivial(panel.getRaster());
-        redRasterizer.setColor(CLIPPED_LINE_COLOR);
-        this.clippedLineRasterizer = redRasterizer;
-
         // Fillers
         seedFiller = new SeedFill(panel.getRaster());
-        seedFiller.setFillColor(FILL_COLOR);
-        seedFiller.setBoundaryColor(BOUNDARY_COLOR);
-
         scanLineFill = new ScanLineFill(panel.getRaster(), polygonRasterizer);
-        scanLineFill.setFillColor(SCANLINE_COLOR);
+
+        resetColors();
 
         initListeners();
         initToolbar();
         drawScene();
+    }
+
+    // barvy do rasterizérů a fillerů
+    private void applyColors() {
+        lineRasterizer.setColor(boundaryColor);
+        clipLineRasterizer.setColor(clipColor);
+        windowLineRasterizer.setColor(windowColor);
+        clippedLineRasterizer.setColor(clippedLineColor);
+
+        seedFiller.setFillColor(fillColor);
+        seedFiller.setBoundaryColor(boundaryColor);
+        scanLineFill.setFillColor(scanLineColor);
+    }
+
+    private void resetColors() {
+        boundaryColor = BOUNDARY_COLOR;
+        fillColor = FILL_COLOR;
+        scanLineColor = SCANLINE_COLOR;
+        clipColor = CLIP_COLOR;
+        windowColor = WINDOW_COLOR;
+        clippedLineColor = CLIPPED_LINE_COLOR;
+        applyColors();
+    }
+
+    // náhodné, navzájem různé
+    private void randomizeColors() {
+        List<Integer> used = new ArrayList<>();
+        boundaryColor = randomColor(used);
+        fillColor = randomColor(used);
+        scanLineColor = randomColor(used);
+        clipColor = randomColor(used);
+        windowColor = randomColor(used);
+        clippedLineColor = randomColor(used);
+        applyColors();
+    }
+
+    private int randomColor(List<Integer> used) {
+        int color;
+        do {
+            // složky 64–255, ne tmavá
+            int r = 64 + random.nextInt(192);
+            int g = 64 + random.nextInt(192);
+            int b = 64 + random.nextInt(192);
+            color = (r << 16) | (g << 8) | b;
+        } while (used.contains(color));
+
+        used.add(color);
+        return color;
     }
 
     // podle velikosti rastru
@@ -259,6 +304,12 @@ public class Controller2D {
                     clearAll();
                 }
 
+                // náhodné barvy
+                if (e.getKeyCode() == KeyEvent.VK_R) {
+                    randomizeColors();
+                    drawScene();
+                }
+
                 // přepnutí podmínky
                 if (e.getKeyCode() == KeyEvent.VK_B) {
                     seedFiller.setUseBoundaryColor(!seedFiller.isUseBoundaryColor());
@@ -314,6 +365,7 @@ public class Controller2D {
         clipDrawingStarted = false;
         customClipPolygon = false;
         createClipShapes(); // zpět šestiúhelník
+        resetColors();
         drawScene();
     }
 
@@ -390,7 +442,7 @@ public class Controller2D {
             Polygon active = activePolygon();
             LineRasterizer rubberRasterizer;
             if (editingClipPolygon) {
-                rubberRasterizer = clipLineRasterizer; // žlutě
+                rubberRasterizer = clipLineRasterizer; // barva ořezu
             } else {
                 rubberRasterizer = lineRasterizer;
             }

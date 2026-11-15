@@ -6,9 +6,14 @@ import raster.Raster;
 
 public abstract class LineRasterizer {
     protected Raster raster;
+    protected int color = 0xFFFFFF;
 
     public LineRasterizer(Raster raster) {
         this.raster = raster;
+    }
+
+    public void setColor(int color) {
+        this.color = color;
     }
 
     public void rasterize(int x1, int y1, int x2, int y2) {
