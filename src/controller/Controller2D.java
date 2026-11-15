@@ -18,6 +18,8 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -54,9 +56,9 @@ public class Controller2D {
 
     // Ořezávání
     private final SHClipper shClipper = new SHClipper();
-    private final Polygon clipPolygon;
-    private final CSClipper csClipper;
-    private final Polygon clipWindow;
+    private Polygon clipPolygon;
+    private CSClipper csClipper;
+    private Polygon clipWindow;
 
     //Fillers
     private SeedFill seedFiller;
@@ -85,23 +87,7 @@ public class Controller2D {
         clipLineRasterizer.setColor(CLIP_COLOR);
         this.clipRasterizer = new PolygonRasterizer(clipLineRasterizer);
 
-        // ořezávací šestiúhelník
-        int width = panel.getRaster().getWidth();
-        int height = panel.getRaster().getHeight();
-        clipPolygon = Polygon.createRegular(width / 2, height / 2, Math.min(width, height) / 3, 6);
-
-        // ořezávací okno
-        int xMin = width / 8;
-        int yMin = height / 8;
-        int xMax = width - width / 8;
-        int yMax = height - height / 8;
-        csClipper = new CSClipper(xMin, yMin, xMax, yMax);
-
-        clipWindow = new Polygon();
-        clipWindow.addPoint(new Point2D(xMin, yMin));
-        clipWindow.addPoint(new Point2D(xMax, yMin));
-        clipWindow.addPoint(new Point2D(xMax, yMax));
-        clipWindow.addPoint(new Point2D(xMin, yMax));
+        createClipShapes();
 
         LineRasterizerTrivial windowLineRasterizer = new LineRasterizerTrivial(panel.getRaster());
         windowLineRasterizer.setColor(WINDOW_COLOR);
@@ -123,6 +109,28 @@ public class Controller2D {
         initToolbar();
         updateTitle();
         drawScene();
+    }
+
+    // podle velikosti rastru
+    private void createClipShapes() {
+        int width = panel.getRaster().getWidth();
+        int height = panel.getRaster().getHeight();
+
+        // ořezávací šestiúhelník
+        clipPolygon = Polygon.createRegular(width / 2, height / 2, Math.min(width, height) / 3, 6);
+
+        // ořezávací okno
+        int xMin = width / 8;
+        int yMin = height / 8;
+        int xMax = width - width / 8;
+        int yMax = height - height / 8;
+        csClipper = new CSClipper(xMin, yMin, xMax, yMax);
+
+        clipWindow = new Polygon();
+        clipWindow.addPoint(new Point2D(xMin, yMin));
+        clipWindow.addPoint(new Point2D(xMax, yMin));
+        clipWindow.addPoint(new Point2D(xMax, yMax));
+        clipWindow.addPoint(new Point2D(xMin, yMax));
     }
 
     private void initToolbar() {
@@ -196,6 +204,16 @@ public class Controller2D {
 
         panel.addMouseListener(mouseAdapter);
         panel.addMouseMotionListener(mouseAdapter);
+
+        // změna velikosti okna
+        panel.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                panel.getRaster().resize(panel.getWidth(), panel.getHeight());
+                createClipShapes();
+                drawScene();
+            }
+        });
 
         // Clear
         panel.setFocusable(true);

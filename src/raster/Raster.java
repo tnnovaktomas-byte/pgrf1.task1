@@ -6,4 +6,5 @@ public interface Raster {
     int getWidth();
     int getHeight();
     void clear();
+    void resize(int width, int height);
 }

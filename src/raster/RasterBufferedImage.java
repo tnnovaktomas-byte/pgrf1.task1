@@ -5,7 +5,7 @@ import java.awt.image.BufferedImage;
 
 public class RasterBufferedImage implements Raster {
 
-    private final BufferedImage image;
+    private BufferedImage image;
 
     public RasterBufferedImage(int width, int height) {
         image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -39,6 +39,14 @@ public class RasterBufferedImage implements Raster {
 
     public BufferedImage getImage() {
         return image;
+    }
+
+    // nový obrázek
+    @Override
+    public void resize(int width, int height) {
+        if (width <= 0 || height <= 0) return;
+        if (width == image.getWidth() && height == image.getHeight()) return;
+        image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
     }
 
     @Override
