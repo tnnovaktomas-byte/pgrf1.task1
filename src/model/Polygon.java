@@ -26,6 +26,18 @@ public class Polygon {
         points.clear();
     }
 
+    // pravidelný n-úhelník na clip
+    public static Polygon createRegular(int centerX, int centerY, int radius, int count) {
+        Polygon result = new Polygon();
+        for (int i = 0; i < count; i++) {
+            double angle = 2 * Math.PI * i / count;
+            int x = (int) Math.round(centerX + radius * Math.cos(angle));
+            int y = (int) Math.round(centerY + radius * Math.sin(angle));
+            result.addPoint(new Point2D(x, y));
+        }
+        return result;
+    }
+
     // orientace (shoelace)
     public boolean isClockwise() {
         long sum = 0;
