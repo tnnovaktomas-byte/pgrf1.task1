@@ -16,7 +16,13 @@ public class PolygonRasterizer {
     }
 
     public void rasterize(Polygon polygon) {
-        if(polygon.getSize() < 3) return;
+        if (polygon.getSize() < 2) return;
+
+        // dva body – vykreslíme jen úsečku mezi nimi
+        if (polygon.getSize() == 2) {
+            lineRasterizer.rasterize(polygon.getPoint(0), polygon.getPoint(1));
+            return;
+        }
 
         for (int i = 0; i < polygon.getSize(); i++) {
             Point2D pointA = polygon.getPoint(i);

@@ -19,6 +19,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Controller2D {
+    // Barvy
+    private static final int BOUNDARY_COLOR = 0xFFFFFF;
+    private static final int FILL_COLOR = 0x00FF00;
+
     private final Panel panel;
 
     //Rasterizace
@@ -41,11 +45,14 @@ public class Controller2D {
     public Controller2D(Panel panel) {
         this.panel = panel;
         //Triviální Rasterizers
-        this.lineRasterizer = new LineRasterizerTrivial(panel.getRaster());
+        LineRasterizerTrivial trivialRasterizer = new LineRasterizerTrivial(panel.getRaster());
+        trivialRasterizer.setColor(BOUNDARY_COLOR); // hranice (úsečky i polygon)
+        this.lineRasterizer = trivialRasterizer;
         this.polygonRasterizer = new PolygonRasterizer(lineRasterizer);
 
         // Fillers
         seedFiller = new SeedFill(panel.getRaster());
+        seedFiller.setFillColor(FILL_COLOR);
 
         initListeners();
     }
@@ -119,14 +126,13 @@ public class Controller2D {
 
             @Override
             public void keyReleased(KeyEvent e) {
-                // puštění Shiftu během tažení – konec se vrátí pod kurzor
+
                 if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
                     updateLineEnd(false);
                 }
             }
         });
     }
-
 
     private void updateLineEnd(boolean shift) {
         if (tempLineStart == null || mousePosition == null) return;
