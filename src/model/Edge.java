@@ -1,7 +1,8 @@
 package model;
 
 public class Edge {
-    private final int x1, y1, x2, y2;
+    // nejsou final, aby je šlo v orientate() prohodit
+    private int x1, y1, x2, y2;
 
     public Edge(int x1, int y1, int x2, int y2) {
         this.x1 = x1;
@@ -21,21 +22,34 @@ public class Edge {
         return y1 == y2;
     }
 
+    /**
+     * Zorientuje hranu shora dolů – po zavolání platí y1 < y2.
+     */
     public void orientate() {
-        // TODO: zařídí, že hrana směřuje dolů/nahoru, podle vašeho výběru
-        // má vliv na podmínku u zjišťování průsečíku
+        if (y1 > y2) {
+            int tmp = x1; x1 = x2; x2 = tmp;
+            tmp = y1; y1 = y2; y2 = tmp;
+        }
     }
 
+    /**
+     * Existuje průsečík se scan-line y?
+     * Interval je zprava otevřený (y < y2) = zkrácení hrany o 1 pixel na konci.
+     * Díky tomu se společný vrchol dvou navazujících hran nezapočítá dvakrát.
+     * Předpokládá zorientovanou hranu (y1 < y2).
+     */
     public boolean isIntersection(int y) {
-        // TODO: napsat podmínku, jestli existuje průsečík
-        // podmínka byla na tabuli a určitě je i v přednáškách
-        // tady probíhá zkrácení o "1 pixel"
-        return true;
+        return y >= y1 && y < y2;
     }
 
+    /**
+     * x-ová souřadnice průsečíku hrany se scan-line y.
+     * Používáme převrácenou směrnici 1/k = dx/dy, protože hrana není vodorovná
+     * (dy != 0), kdežto svislá hrana (dx = 0) by s k = dy/dx dělila nulou.
+     */
     public int getIntersection(int y) {
-        // TODO: spočítáme průsečík
-        return 0;
+        double invK = (double) (x2 - x1) / (y2 - y1);
+        return (int) Math.round(x1 + (y - y1) * invK);
     }
 
     public int getX1() {

@@ -3,11 +3,17 @@ package fill;
 import model.Point2D;
 import raster.Raster;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+
 public class SeedFill implements Filler {
-    private Raster raster;
+    private final Raster raster;
     private Point2D seed;
 
     private int backgroundColor, fillColor;
+
+    // zásobník (push/pop) – pro frontu stačí místo push použít addLast (offer)
+    private final Deque<Point2D> stack = new ArrayDeque<>();
 
     public SeedFill(Raster raster) {
         this.raster = raster;
@@ -16,34 +22,41 @@ public class SeedFill implements Filler {
 
     @Override
     public void fill() {
-        if(seed == null) return;
+        if (seed == null) return;
 
-        fill(seed.getX(), seed.getY());
+        backgroundColor = raster.getPixel(seed.getX(), seed.getY());
+
+        if ((backgroundColor & 0xFFFFFF) == (fillColor & 0xFFFFFF)) return;
+
+        stack.clear();
+        nextPixel(seed.getX(), seed.getY()); // semínko
+
+        while (!stack.isEmpty()) {
+            Point2D p = stack.pop();
+            int x = p.getX();
+            int y = p.getY();
+
+            nextPixel(x + 1, y);
+            nextPixel(x - 1, y);
+            nextPixel(x, y + 1);
+            nextPixel(x, y - 1);
+        }
     }
 
-    // rekurze
-    private void fill(int x, int y) {
-        // 1. načtu barvu pixelu na x, y
-        int colorPixel = raster.getPixel(x, y);
-
-        // 2. dostal jsem barvu a musím rozhodnout, jestli chci obarvit pixel
-        // rovná se barva barvě pozadí? pokud ano, obarvím, jinak nic nedělám
-        if(colorPixel != backgroundColor)
+    private void nextPixel(int x, int y) {
+        // Mimo rastr
+        if (x < 0 || y < 0 || x >= raster.getWidth() || y >= raster.getHeight())
             return;
 
-        // 3. pokud mám obarvit
-        // obarvím
-        raster.setPixel(x, y, fillColor);
-        // vše opakuji pro sousedy (rekurze)
-        fill(x + 1, y);
-        fill(x - 1, y);
-        fill(x, y + 1);
-        fill(x, y - 1);
+        if (raster.getPixel(x, y) == backgroundColor) {
+
+            raster.setPixel(x, y, fillColor);
+            stack.push(new Point2D(x, y));
+        }
     }
 
     public void setSeed(Point2D seed) {
         this.seed = seed;
-        setBackgroundColor(raster.getPixel(seed.getX(), seed.getY()));
     }
 
     public void setBackgroundColor(int backgroundColor) {

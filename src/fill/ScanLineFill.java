@@ -3,22 +3,31 @@ package fill;
 import model.Edge;
 import model.Point2D;
 import model.Polygon;
+import raster.Raster;
+import rasterize.PolygonRasterizer;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ScanLineFill implements Filler {
+    private final Raster raster;
+    private final PolygonRasterizer polygonRasterizer;
+
     private int fillColor;
     private Polygon polygon;
 
-    public ScanLineFill() {
+    public ScanLineFill(Raster raster, PolygonRasterizer polygonRasterizer) {
+        this.raster = raster;
+        this.polygonRasterizer = polygonRasterizer;
         setFillColor(0x00ff00);
     }
 
     @Override
     public void fill() {
-        if (polygon.getSize() < 3) return;
+        if (polygon == null || polygon.getSize() < 3) return;
 
+        // Seznam hran
         List<Edge> edges = new ArrayList<>();
         for (int i = 0; i < polygon.getSize(); i++) {
             Point2D pointA = polygon.getPoint(i);
@@ -31,29 +40,39 @@ public class ScanLineFill implements Filler {
             }
         }
 
-        // TODO: Musíme najít min a max Y
+        // MinY/MaxY
         int yMin = polygon.getPoint(0).getY();
         int yMax = yMin;
-
-
-        for (int y = yMin; y <= yMax; y++) {
-            List<Integer> intersection = new ArrayList<>();
-
-            // TODO: pro danou scan line se ptáme, jestli existuje
-            // průsečík s hranou. S jakou???? Se všema!!!
-            for(Edge edge : edges) {
-                if(!edge.isIntersection(y)) continue;
-
-                // TODO: spočítáme průsečík
-                // TODO: průsečík uložíme - do seznamu průsečů
-            }
-
-            // Máme průsečíky
-            // TODO: Spojíme lichý se sudým
+        for (int i = 1; i < polygon.getSize(); i++) {
+            int y = polygon.getPoint(i).getY();
+            if (y < yMin) yMin = y;
+            if (y > yMax) yMax = y;
         }
 
-        // TODO: Obtáhneme polygon
+        // Hledání Průsečíků
+        for (int y = yMin; y <= yMax; y++) {
+            List<Integer> intersections = new ArrayList<>();
 
+            for (Edge edge : edges) {
+                if (!edge.isIntersection(y)) continue;
+
+                intersections.add(edge.getIntersection(y));
+            }
+
+            Collections.sort(intersections);
+
+            // Spojení Lichý a sudý
+            for (int i = 0; i + 1 < intersections.size(); i += 2) {
+                int xStart = intersections.get(i);
+                int xEnd = intersections.get(i + 1);
+                for (int x = xStart; x <= xEnd; x++) {
+                    raster.setPixel(x, y, fillColor);
+                }
+            }
+        }
+
+
+        polygonRasterizer.rasterize(polygon);
     }
 
     @Override
