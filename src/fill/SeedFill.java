@@ -26,16 +26,13 @@ public class SeedFill implements Filler {
 
     @Override
     public void fill() {
-        if (seed == null)
-            return;
+        if (seed == null) return;
 
         backgroundColor = raster.getPixel(seed.getX(), seed.getY());
 
-        if (backgroundColor == fillColor)
-            return;
+        if (backgroundColor == fillColor) return;
 
-        if (!belongsToArea(seed.getX(), seed.getY()))
-            return;
+        if (!belongsToArea(seed.getX(), seed.getY())) return;
 
         stack.clear();
         nextPixel(seed.getX(), seed.getY()); // startovní pixel = semínko
@@ -55,8 +52,7 @@ public class SeedFill implements Filler {
 
     // patří-li pixel do oblasti, obarví ho a uloží do zásobníku
     private void nextPixel(int x, int y) {
-        if (x < 0 || y < 0 || x >= raster.getWidth() || y >= raster.getHeight())
-            return;
+        if (x < 0 || y < 0 || x >= raster.getWidth() || y >= raster.getHeight()) return;
 
         if (belongsToArea(x, y)) {
             raster.setPixel(x, y, fillColor);

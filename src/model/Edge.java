@@ -27,8 +27,12 @@ public class Edge {
      */
     public void orientate() {
         if (y1 > y2) {
-            int tmp = x1; x1 = x2; x2 = tmp;
-            tmp = y1; y1 = y2; y2 = tmp;
+            int tmp = x1;
+            x1 = x2;
+            x2 = tmp;
+            tmp = y1;
+            y1 = y2;
+            y2 = tmp;
         }
     }
 
@@ -48,12 +52,12 @@ public class Edge {
      * 3. vektor k bodu v = P - P1
      * 4. skalární součin n · v
      * Normalizace není potřeba – o straně rozhoduje jen znaménko.
-     *
+     * <p>
      * Na obrazovce roste osa y dolů, proto normála (-t.y, t.x) míří
      * vpravo od směru hrany (P1 -> P2):
-     *   > 0  bod leží vpravo
-     *   < 0  bod leží vlevo
-     *   = 0  bod leží na přímce
+     * > 0  bod leží vpravo
+     * < 0  bod leží vlevo
+     * = 0  bod leží na přímce
      * Pozor: orientate() může hranu otočit, a tím prohodit strany.
      */
     public int side(int x, int y) {

@@ -43,9 +43,7 @@ public class Controller2D {
 
     // režim ořezu
     private enum ClipMode {
-        NONE,
-        POLYGON,
-        LINE
+        NONE, POLYGON, LINE
     }
 
     private final Panel panel;
@@ -246,11 +244,12 @@ public class Controller2D {
                     drawScene();
                 }
 
-                if(e.getButton() == MouseEvent.BUTTON2) {
+                if (e.getButton() == MouseEvent.BUTTON2) {
                     seedFiller.setSeed(new Point2D(e.getX(), e.getY()));
                     drawScene();
                 }
             }
+
             //Aktualizace souřadnic
             @Override
             public void mouseDragged(MouseEvent e) {

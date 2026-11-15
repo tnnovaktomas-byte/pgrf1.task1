@@ -9,6 +9,7 @@ public class Polygon {
     public Polygon() {
         points = new ArrayList<>();
     }
+
     //přidání pointu
     public void addPoint(Point2D point) {
         points.add(point);

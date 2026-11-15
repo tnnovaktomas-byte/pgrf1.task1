@@ -2,7 +2,7 @@ package rasterize;
 
 import raster.Raster;
 
-public class LineRasterizerTrivial extends LineRasterizer{
+public class LineRasterizerTrivial extends LineRasterizer {
 
     public LineRasterizerTrivial(Raster raster) {
         super(raster);
@@ -29,7 +29,9 @@ public class LineRasterizerTrivial extends LineRasterizer{
         if (Math.abs(k) <= 1) {
             // Řídicí osa je X
             if (x1 > x2) {
-                int tmpX = x1; x1 = x2; x2 = tmpX;
+                int tmpX = x1;
+                x1 = x2;
+                x2 = tmpX;
             }
             for (int x = x1; x <= x2; x++) {
                 int y = (int) Math.round(k * x + q);
