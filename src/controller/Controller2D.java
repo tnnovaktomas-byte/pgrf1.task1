@@ -10,6 +10,7 @@ import rasterize.LineRasterizerTrivial;
 import rasterize.PolygonRasterizer;
 import view.Panel;
 
+import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -56,6 +57,7 @@ public class Controller2D {
         seedFiller.setBoundaryColor(BOUNDARY_COLOR);
 
         initListeners();
+        updateTitle();
     }
 
     private void initListeners() {
@@ -120,6 +122,13 @@ public class Controller2D {
                     clearAll();
                 }
 
+                // přepnutí podmínky
+                if (e.getKeyCode() == KeyEvent.VK_B) {
+                    seedFiller.setUseBoundaryColor(!seedFiller.isUseBoundaryColor());
+                    updateTitle();
+                    drawScene();
+                }
+
                 if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
                     updateLineEnd(true);
                 }
@@ -158,7 +167,21 @@ public class Controller2D {
         mousePosition = null;
         tempPolygonPoint = null;
         seedFiller.setSeed(null); // bez semínka se nic nevyplňuje
+        seedFiller.setUseBoundaryColor(false);
+        updateTitle();
         drawScene();
+    }
+
+    // režim v titulku
+    private void updateTitle() {
+        JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(panel);
+        if (frame == null) return;
+
+        if (seedFiller.isUseBoundaryColor()) {
+            frame.setTitle("PGRF1 – seed fill: barva hranice [B]");
+        } else {
+            frame.setTitle("PGRF1 – seed fill: barva pozadí [B]");
+        }
     }
 
     private void drawScene() {
