@@ -2,6 +2,7 @@ package controller;
 
 import fill.Filler;
 import fill.SeedFill;
+import model.Edge;
 import model.Line;
 import model.Point2D;
 import model.Polygon;
@@ -60,6 +61,7 @@ public class Controller2D {
                     drawScene();
                 } else if (SwingUtilities.isRightMouseButton(e)) {
                     tempPolygonPoint = new Point2D(e.getX(), e.getY());
+                    printPointPosition(tempPolygonPoint);
                     drawScene();
                 }
 
@@ -110,6 +112,24 @@ public class Controller2D {
                 }
             }
         });
+    }
+
+    // Test bodu v polorovině – výpis do konzole
+    private void printPointPosition(Point2D p) {
+        int size = polygon.getSize();
+        if (size < 2) return;
+
+        // poloha vůči poslední hraně (předposlední -> poslední vrchol)
+        Edge lastEdge = new Edge(polygon.getPoint(size - 2), polygon.getPoint(size - 1));
+        int side = lastEdge.side(p);
+        if (side > 0) System.out.println("Bod je vpravo od poslední hrany");
+        else if (side < 0) System.out.println("Bod je vlevo od poslední hrany");
+        else System.out.println("Bod leží na přímce poslední hrany");
+
+        // poloha vůči celému polygonu (platí pro konvexní polygon)
+        if (size >= 3) {
+            System.out.println(polygon.isInside(p) ? "Bod je uvnitř polygonu" : "Bod je vně polygonu");
+        }
     }
 
     private void clearAll() {

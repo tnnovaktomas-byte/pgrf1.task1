@@ -52,6 +52,32 @@ public class Edge {
         return (int) Math.round(x1 + (y - y1) * invK);
     }
 
+    /**
+     * Test polohy bodu vůči přímce hrany (bod v polorovině).
+     * 1. tečný vektor t = P2 - P1
+     * 2. normála n = (-t.y, t.x)
+     * 3. vektor k bodu v = P - P1
+     * 4. skalární součin n · v
+     *
+     * Na obrazovce roste osa y dolů, proto normála (-t.y, t.x) míří
+     * vpravo od směru hrany
+     *   > 0  bod leží vpravo
+     *   < 0  bod leží vlevo
+     *   = 0  bod leží na přímce
+     * Pozor: orientate() může hranu otočit, a tím prohodit strany.
+     */
+    public int side(int x, int y) {
+        int tx = x2 - x1;
+        int ty = y2 - y1;
+        int vx = x - x1;
+        int vy = y - y1;
+        return -ty * vx + tx * vy;
+    }
+
+    public int side(Point2D p) {
+        return side(p.getX(), p.getY());
+    }
+
     public int getX1() {
         return x1;
     }
