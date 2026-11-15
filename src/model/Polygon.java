@@ -58,6 +58,23 @@ public class Polygon {
         return result;
     }
 
+    // konvexnost
+    public boolean isConvex() {
+        if (points.size() < 3) return false;
+
+        boolean hasLeft = false, hasRight = false;
+        for (int i = 0; i < points.size(); i++) {
+            Edge edge = new Edge(points.get(i), points.get((i + 1) % points.size()));
+            for (Point2D p : points) {
+                int side = edge.side(p);
+                if (side > 0) hasRight = true;
+                if (side < 0) hasLeft = true;
+            }
+            if (hasLeft && hasRight) return false;
+        }
+        return hasLeft || hasRight; // ne vše na přímce
+    }
+
     public boolean isInside(Point2D p) {
         if (points.size() < 3) return false;
 

@@ -46,10 +46,14 @@ public class Controller2D {
     private final Panel panel;
     private final ClipToolbar clipToolbar;
     private ClipMode clipMode = ClipMode.NONE;
+    private boolean editingClipPolygon = false; // Ctrl + pravé tlačítko
+    private boolean clipDrawingStarted = false; // během jednoho podržení Ctrl
+    private boolean customClipPolygon = false;  // vlastní místo šestiúhelníku
 
     //Rasterizace
     private final LineRasterizer lineRasterizer;
     private final PolygonRasterizer polygonRasterizer;
+    private final LineRasterizer clipLineRasterizer;
     private final PolygonRasterizer clipRasterizer;
     private final PolygonRasterizer windowRasterizer;
     private final LineRasterizer clippedLineRasterizer;
@@ -83,8 +87,9 @@ public class Controller2D {
         this.lineRasterizer = trivialRasterizer;
         this.polygonRasterizer = new PolygonRasterizer(lineRasterizer);
 
-        LineRasterizerTrivial clipLineRasterizer = new LineRasterizerTrivial(panel.getRaster());
-        clipLineRasterizer.setColor(CLIP_COLOR);
+        LineRasterizerTrivial yellowRasterizer = new LineRasterizerTrivial(panel.getRaster());
+        yellowRasterizer.setColor(CLIP_COLOR);
+        this.clipLineRasterizer = yellowRasterizer;
         this.clipRasterizer = new PolygonRasterizer(clipLineRasterizer);
 
         createClipShapes();
@@ -107,7 +112,6 @@ public class Controller2D {
 
         initListeners();
         initToolbar();
-        updateTitle();
         drawScene();
     }
 
@@ -117,7 +121,9 @@ public class Controller2D {
         int height = panel.getRaster().getHeight();
 
         // ořezávací šestiúhelník
-        clipPolygon = Polygon.createRegular(width / 2, height / 2, Math.min(width, height) / 3, 6);
+        if (!customClipPolygon) {
+            clipPolygon = Polygon.createRegular(width / 2, height / 2, Math.min(width, height) / 3, 6);
+        }
 
         // ořezávací okno
         int xMin = width / 8;
@@ -153,6 +159,30 @@ public class Controller2D {
         clipToolbar.getLineClipButton().addActionListener(clipListener);
     }
 
+    // první Ctrl + klik
+    private void startClipPolygon() {
+        clipPolygon = new Polygon();
+        customClipPolygon = true;
+        clipDrawingStarted = true;
+
+        clipMode = ClipMode.POLYGON;
+        clipToolbar.getPolygonClipButton().setSelected(true);
+    }
+
+    // kam přidává pravé tlačítko
+    private Polygon activePolygon() {
+        if (editingClipPolygon) {
+            return clipPolygon;
+        } else {
+            return polygon;
+        }
+    }
+
+    // lze ořezávat?
+    private boolean isClipPolygonValid() {
+        return clipPolygon.isConvex();
+    }
+
     private void initListeners() {
         MouseAdapter mouseAdapter = new MouseAdapter() {
             //Začátek modelu
@@ -163,6 +193,10 @@ public class Controller2D {
                     tempLineEnd = tempLineStart;
                     drawScene();
                 } else if (SwingUtilities.isRightMouseButton(e)) {
+                    editingClipPolygon = e.isControlDown();
+                    if (editingClipPolygon && !clipDrawingStarted) {
+                        startClipPolygon();
+                    }
                     tempPolygonPoint = new Point2D(e.getX(), e.getY());
                     drawScene();
                 }
@@ -195,7 +229,7 @@ public class Controller2D {
                     mousePosition = null;
                     drawScene();
                 } else if (SwingUtilities.isRightMouseButton(e) && tempPolygonPoint != null) {
-                    polygon.addPoint(new Point2D(e.getX(), e.getY()));
+                    activePolygon().addPoint(new Point2D(e.getX(), e.getY()));
                     tempPolygonPoint = null;
                     drawScene();
                 }
@@ -228,7 +262,6 @@ public class Controller2D {
                 // přepnutí podmínky
                 if (e.getKeyCode() == KeyEvent.VK_B) {
                     seedFiller.setUseBoundaryColor(!seedFiller.isUseBoundaryColor());
-                    updateTitle();
                     drawScene();
                 }
 
@@ -239,6 +272,10 @@ public class Controller2D {
 
             @Override
             public void keyReleased(KeyEvent e) {
+                // další podržení = nový polygon
+                if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
+                    clipDrawingStarted = false;
+                }
 
                 if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
                     updateLineEnd(false);
@@ -273,7 +310,10 @@ public class Controller2D {
         seedFiller.setUseBoundaryColor(false);
         clipMode = ClipMode.NONE;
         clipToolbar.getNoClipButton().setSelected(true);
-        updateTitle();
+        editingClipPolygon = false;
+        clipDrawingStarted = false;
+        customClipPolygon = false;
+        createClipShapes(); // zpět šestiúhelník
         drawScene();
     }
 
@@ -282,11 +322,17 @@ public class Controller2D {
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(panel);
         if (frame == null) return;
 
+        String title;
         if (seedFiller.isUseBoundaryColor()) {
-            frame.setTitle("PGRF1 – seed fill: barva hranice [B]");
+            title = "PGRF1 – seed fill: barva hranice [B]";
         } else {
-            frame.setTitle("PGRF1 – seed fill: barva pozadí [B]");
+            title = "PGRF1 – seed fill: barva pozadí [B]";
         }
+
+        if (clipMode == ClipMode.POLYGON && !isClipPolygonValid()) {
+            title += " | ořezávací polygon není konvexní – bez ořezu";
+        }
+        frame.setTitle(title);
     }
 
     // celá bíle, ořez červeně
@@ -313,10 +359,13 @@ public class Controller2D {
             drawLine(new Line(tempLineStart, tempLineEnd));
         }
 
+        // ořezávat jen konvexním
+        boolean clipping = clipMode == ClipMode.POLYGON && isClipPolygonValid();
+
         // výplň (případně ořezaná)
         if (polygon.getSize() >= 3) {
             Polygon toFill = polygon;
-            if (clipMode == ClipMode.POLYGON) {
+            if (clipping) {
                 toFill = shClipper.clip(polygon, clipPolygon);
             }
             scanLineFill.setPolygon(toFill);
@@ -324,7 +373,7 @@ public class Controller2D {
         }
 
         // obrys (jinak ho kreslí scan-line)
-        if (polygon.getSize() < 3 || clipMode == ClipMode.POLYGON) {
+        if (polygon.getSize() < 3 || clipping) {
             polygonRasterizer.rasterize(polygon);
         }
 
@@ -338,19 +387,28 @@ public class Controller2D {
 
         // Pružná úsečka por polygon
         if (tempPolygonPoint != null) {
-            int size = polygon.getSize();
+            Polygon active = activePolygon();
+            LineRasterizer rubberRasterizer;
+            if (editingClipPolygon) {
+                rubberRasterizer = clipLineRasterizer; // žlutě
+            } else {
+                rubberRasterizer = lineRasterizer;
+            }
+
+            int size = active.getSize();
             if (size == 1) {
-                lineRasterizer.rasterize(polygon.getPoint(0), tempPolygonPoint);
+                rubberRasterizer.rasterize(active.getPoint(0), tempPolygonPoint);
             } else if (size >= 2) {
-                Point2D lastPoint = polygon.getPoint(size - 1);
-                Point2D firstPoint = polygon.getPoint(0);
-                lineRasterizer.rasterize(lastPoint, tempPolygonPoint);
-                lineRasterizer.rasterize(tempPolygonPoint, firstPoint);
+                Point2D lastPoint = active.getPoint(size - 1);
+                Point2D firstPoint = active.getPoint(0);
+                rubberRasterizer.rasterize(lastPoint, tempPolygonPoint);
+                rubberRasterizer.rasterize(tempPolygonPoint, firstPoint);
             }
         }
 
         seedFiller.fill();
 
+        updateTitle();
         panel.repaint();
     }
 }
